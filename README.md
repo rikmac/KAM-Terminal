@@ -4,7 +4,7 @@ Un terminale moderno e intuitivo per radio Kantronics All Mode (KAM) sviluppato 
 
 ## 🎯 Scopo del Progetto
 
-Questo programma fornisce un'interfaccia terminale semplice e moderna per comunicare con radio KAM (Kantronics All Mode), permettendo di operare in modo digitale sui modi CW, PSK31, RTTY e altri modi digitali supportati dal KAM.
+Questo programma fornisce un'interfaccia terminale semplice e moderna per comunicare con radio KAM (Kantronics All Mode), permettendo di operare in modo digitale sui modi CW, RTTY e altri modi digitali supportati dal KAM.
 
 ## ✨ Caratteristiche Principali
 
