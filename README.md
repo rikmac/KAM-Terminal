@@ -109,7 +109,6 @@ python main.py
 
 ### Modi Supportati
 - **CW**: Telegrafia
-- **PSK31**: Phase Shift Keying
 - **RTTY**: Radio Teletype
 - **Packet**: Packet Radio
 - Altri modi digitali supportati dal KAM
