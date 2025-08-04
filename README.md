@@ -1,6 +1,6 @@
 # KAM Terminal de IW5DGQ
 
-Un terminale moderno e intuitivo per radio Kantronics All Mode (KAM) sviluppato in Python con interfaccia grafica Tkinter.
+Un terminale moderno e intuitivo per radio Kantronics All Mode (KAM) sviluppato in Python con interfaccia grafica PyQt5.
 
 ## 🎯 Scopo del Progetto
 
@@ -18,9 +18,9 @@ Questo programma fornisce un'interfaccia terminale semplice e moderna per comuni
 ## 🖥️ Interfaccia Utente
 
 ### Finestra Principale
-- **Parte Alta (verde)**: Display di ricezione dal KAM (solo lettura)
-- **Parte Bassa (nera)**: Terminale per digitare e inviare comandi
-- **Barra di Stato**: Mostra stato connessione e configurazione porta
+- **Parte Alta (sfondo nero, testo verde)**: Display di ricezione dal KAM (solo lettura)
+- **Parte Bassa (sfondo nero, testo bianco)**: Terminale per digitare e inviare comandi
+- **Menu in alto**: Contiene le opzioni per configurazione e connessione
 
 ### Pulsanti di Controllo
 - **F1-F8**: Script configurabili (tasto destro per configurare)
@@ -35,9 +35,9 @@ Questo programma fornisce un'interfaccia terminale semplice e moderna per comuni
 1. **Connetti** il KAM alla porta seriale
 2. **Configura** la porta COM se necessario
 3. **Clicca Connetti** per stabilire la comunicazione
-4. **TX** → Vai in trasmissione
-5. **F1-F8** per script rapidi o **scrivi manualmente**
-6. **RX** → Torna in ricezione
+4. **TX** → Vai in trasmissione nella modalità in uso **scrivi manualmente**
+5. **RX** → Torna in ricezione nella modalità in uso
+6. **F1-F8** per script rapidi 
 
 ### Configurazione Script
 - **Tasto destro** su qualsiasi pulsante F1-F8 per configurare
@@ -45,16 +45,8 @@ Questo programma fornisce un'interfaccia terminale semplice e moderna per comuni
 - Gli script vengono eseguiti in sequenza automatica:
   1. Passa in modalità TX
   2. Invia il testo dello script
-  3. Torna in RX dopo lo svuotamento del buffer (CTRL-C E)
+  3. Torna in RX dopo lo svuotamento del buffer
 
-### Comandi Speciali
-- **CTRL-C**: Invia comando di controllo al KAM
-  - **CTRL-C T**: Passa in trasmissione
-  - **CTRL-C R**: Torna in ricezione immediata
-  - **CTRL-C E**: Torna in ricezione dopo svuotamento buffer TX
-  - **CTRL-C X**: Torna in Command Mode
-- **RETURN**: Esegue il comando digitato nel terminale
-- **Tasti F1-F8**: Esegue script configurato con sequenza TX → Comando → RX dopo buffer vuoto
 
 ## ⚙️ Configurazione
 
@@ -66,7 +58,7 @@ Questo programma fornisce un'interfaccia terminale semplice e moderna per comuni
 
 ### Configurazione Seriale
 - **Porta COM**: COM1-COM10 (configurabile)
-- **Velocità Baud**: 300-115200 (default 1200)
+- **Velocità Baud**: 300-9600 (default 1200)
 - **Configurazione**: 8-N-1 (standard per KAM)
 
 ## 📋 Installazione
@@ -84,7 +76,7 @@ python main.py
 ## 🎛️ Configurazioni Predefinite
 
 ### Script di Default
-- **F1**: `CQ CQ CQ DE IW5DGQ IW5DGQ K`
+- **F1**: `CQ CQ CQ DE <CALL> <CALL> K`
 - **F2**: `TNX QSO 73`
 - **F3**: `TU`
 - **F4-F8**: Vuoti (configurabili)
@@ -150,4 +142,4 @@ Progetto open source per la comunità radioamatoriale.
 
 ---
 
-**73 de IW5DGQ** 📻
+**73** 📻

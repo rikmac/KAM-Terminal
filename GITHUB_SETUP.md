@@ -114,4 +114,4 @@ Puoi aggiungere questi badge all'inizio del README:
 ## Supporto
 Se hai problemi con Git o GitHub, cerca tutorials online o chiedi aiuto nella comunità radioamatoriale!
 
-**73 de IW5DGQ** 📻
+**73** 📻

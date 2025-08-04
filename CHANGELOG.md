@@ -28,7 +28,7 @@ Tutte le modifiche rilevanti a questo progetto verranno documentate in questo fi
 - Encoding ASCII per compatibilità KAM
 
 ### Script Predefiniti
-- F1: "CQ CQ CQ DE IW5DGQ IW5DGQ K"
+- F1: "CQ CQ CQ DE <CALL> <CALL> K"
 - F2: "TNX QSO 73"
 - F3: "TU"
 - F4-F8: Configurabili dall'utente
@@ -49,4 +49,4 @@ Tutte le modifiche rilevanti a questo progetto verranno documentate in questo fi
 ---
 
 **Sviluppato con ❤️ per la comunità radioamatoriale**
-**73 de IW5DGQ** 📻
+**73** 📻

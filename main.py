@@ -4,9 +4,12 @@ KAM Terminal - Versione Qt (PyQt5)
 """
 
 import sys
+import os
+import json
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QPushButton, QLabel, QLineEdit, QComboBox, QDialog, QDialogButtonBox
+    QTextEdit, QPushButton, QLabel, QLineEdit, QComboBox, QDialog, QDialogButtonBox,
+    QMenu, QAction, QMessageBox
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import serial
@@ -14,6 +17,7 @@ import time
 
 SERIAL_PORT = "COM1"
 BAUD_RATE = 1200
+CONFIG_FILE = "kam_config.json"
 
 class SerialThread(QThread):
     received = pyqtSignal(str)
@@ -77,8 +81,11 @@ class KAMTerminalQt(QMainWindow):
         self.serial_connection = None
         self.serial_thread = None
         self.script_buttons = {}  # Dizionario per tenere traccia dei pulsanti degli script
+        
+        # Default values (saranno sovrascritti se esiste un file di configurazione)
+        self.callsign = "xx1xyz"  # Nominativo di default
         self.scripts = {
-            "F1": "CQ CQ CQ DE IW5DGQ IW5DGQ K",
+            "F1": "CQ CQ CQ DE <CALL> <CALL> K",
             "F2": "TNX QSO 73",
             "F3": "TU",
             "F4": "",
@@ -98,14 +105,17 @@ class KAMTerminalQt(QMainWindow):
 
         # Crea menu bar
         menubar = self.menuBar()
-        edit_menu = menubar.addMenu('Edit')
+        self.edit_menu = menubar.addMenu('Edit')
         
         # Azioni del menu
-        config_action = edit_menu.addAction('Configura')
+        config_action = self.edit_menu.addAction('Configura')
         config_action.triggered.connect(self.configure_serial)
         
-        connect_action = edit_menu.addAction('Connetti KAM')
+        connect_action = self.edit_menu.addAction('Connetti KAM')
         connect_action.triggered.connect(self.try_serial_connection)
+        
+        callsign_action = self.edit_menu.addAction('Conf. Nominativo')
+        callsign_action.triggered.connect(self.configure_callsign)
         
         # Aggiunge i pulsanti di controllo principali sotto la barra dei menu
         control_bar = QHBoxLayout()
@@ -187,6 +197,13 @@ class KAMTerminalQt(QMainWindow):
         vbox.addWidget(tx_widget, stretch=1)  # Mantiene lo stretch a 1 per l'area di invio
 
         self.log("> KAM Terminal Qt Avviato")
+        
+        # Carica la configurazione dopo aver creato l'interfaccia utente
+        self.load_config()
+        
+        # Aggiungiamo una opzione per salvare la configurazione nel menu
+        save_action = self.edit_menu.addAction('Salva Configurazione')
+        save_action.triggered.connect(self.save_config)
 
     def eventFilter(self, obj, event):
         if obj == self.terminal_input and event.type() == event.KeyPress:
@@ -214,6 +231,48 @@ class KAMTerminalQt(QMainWindow):
             if self.serial_connection and self.serial_connection.is_open:
                 self.serial_connection.close()
             self.log(f"> Configurato: {SERIAL_PORT} @ {BAUD_RATE}")
+    
+    def configure_callsign(self):
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Configurazione Nominativo")
+        dlg.setFixedSize(300, 120)
+        vbox = QVBoxLayout(dlg)
+        vbox.addWidget(QLabel("Inserisci il tuo nominativo:"))
+        entry = QLineEdit()
+        entry.setText(self.callsign)
+        vbox.addWidget(entry)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        vbox.addWidget(buttons)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        if dlg.exec_():
+            new_callsign = entry.text().strip().upper()
+            if new_callsign:
+                self.callsign = new_callsign
+                # Aggiorna F1 con il nuovo nominativo
+                if "F1" in self.scripts and "CQ CQ CQ DE" in self.scripts["F1"]:
+                    self.scripts["F1"] = "CQ CQ CQ DE <CALL> <CALL> K"
+                    if "F1" in self.script_buttons:
+                        button = self.script_buttons["F1"]
+                        # Mostra l'anteprima con il nominativo già sostituito
+                        preview = self.scripts["F1"].replace("<CALL>", self.callsign)
+                        button_text = f"F1: {preview[:10]}{'...' if len(preview) > 10 else ''}"
+                        button.setText(button_text)
+                        button.setToolTip(preview)
+                
+                # Aggiorna tutti i pulsanti degli script per mostrare il nuovo nominativo
+                for key, script in self.scripts.items():
+                    if "<CALL>" in script and key in self.script_buttons:
+                        button = self.script_buttons[key]
+                        preview = script.replace("<CALL>", self.callsign)
+                        button_text = f"{key}: {preview[:10]}{'...' if len(preview) > 10 else ''}"
+                        button.setText(button_text)
+                        button.setToolTip(preview)
+                
+                self.log(f"> Nominativo configurato: {self.callsign}")
+                
+                # Salva la configurazione
+                self.save_config()
 
     def try_serial_connection(self):
         try:
@@ -257,7 +316,9 @@ class KAMTerminalQt(QMainWindow):
     def send_script(self, key):
         script = self.scripts.get(key, "")
         if script:
-            self.send_macro(script)
+            # Sostituisci <CALL> con il nominativo attuale prima di inviare
+            script_to_send = script.replace("<CALL>", self.callsign)
+            self.send_macro(script_to_send)
         else:
             self.log(f"> {key}: Non configurato")
 
@@ -266,7 +327,7 @@ class KAMTerminalQt(QMainWindow):
         dlg.setWindowTitle(f"Configura {key}")
         dlg.setFixedSize(400, 150)
         vbox = QVBoxLayout(dlg)
-        vbox.addWidget(QLabel(f"Inserisci il testo per {key}:\n(lascia vuoto per cancellare)"))
+        vbox.addWidget(QLabel(f"Inserisci il testo per {key}:\n(lascia vuoto per cancellare)\nUsa <CALL> per inserire il tuo nominativo"))
         entry = QLineEdit()
         entry.setText(self.scripts.get(key, ""))
         vbox.addWidget(entry)
@@ -276,20 +337,27 @@ class KAMTerminalQt(QMainWindow):
         buttons.rejected.connect(dlg.reject)
         if dlg.exec_():
             new_script = entry.text()
+            # Salva lo script mantenendo il tag <CALL>
             self.scripts[key] = new_script
             
             # Aggiorna il testo del pulsante usando il riferimento memorizzato
             if key in self.script_buttons:
                 button = self.script_buttons[key]
-                button_text = f"{key}: {new_script[:10]}{'...' if len(new_script) > 10 else ''}"
-                button.setText(button_text)
-                
                 if new_script:
-                    button.setToolTip(new_script)
+                    # Per mostrare l'anteprima con il nominativo sostituito
+                    preview_script = new_script.replace("<CALL>", self.callsign)
+                    button_text = f"{key}: {preview_script[:10]}{'...' if len(preview_script) > 10 else ''}"
+                    button.setText(button_text)
+                    button.setToolTip(preview_script)
                     self.log(f"> {key}: {new_script}")
                 else:
+                    button_text = f"{key}: "
+                    button.setText(button_text)
                     button.setToolTip("Tasto destro per configurare")
                     self.log(f"> {key}: Cancellato")
+            
+            # Salva la configurazione dopo aver modificato uno script
+            self.save_config()
 
     def send_macro(self, text):
         if self.serial_connection and self.serial_connection.is_open:
@@ -348,7 +416,69 @@ class KAMTerminalQt(QMainWindow):
             except Exception as e:
                 self.log(f"Errore: {e}")
 
+    def save_config(self):
+        """Salva la configurazione attuale in un file JSON"""
+        config = {
+            "user_config": {
+                "callsign": self.callsign
+            },
+            "scripts": self.scripts,
+            "serial": {
+                "port": SERIAL_PORT,
+                "baud": BAUD_RATE
+            }
+        }
+        try:
+            with open(CONFIG_FILE, 'w') as f:
+                json.dump(config, f, indent=2)
+            self.log(f"> Configurazione salvata in {CONFIG_FILE}")
+        except Exception as e:
+            self.log(f"> Errore nel salvare la configurazione: {e}")
+
+    def load_config(self):
+        """Carica la configurazione da un file JSON"""
+        if not os.path.exists(CONFIG_FILE):
+            self.log(f"> File di configurazione {CONFIG_FILE} non trovato, uso default")
+            return False
+        
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+            
+            # Carica la configurazione utente
+            if "user_config" in config and "callsign" in config["user_config"]:
+                self.callsign = config["user_config"]["callsign"]
+            
+            # Carica gli script
+            if "scripts" in config:
+                self.scripts = config["scripts"]
+                # Aggiorna i pulsanti degli script
+                for key, script in self.scripts.items():
+                    if key in self.script_buttons:
+                        button = self.script_buttons[key]
+                        preview_script = script.replace("<CALL>", self.callsign)
+                        button_text = f"{key}: {preview_script[:10]}{'...' if len(preview_script) > 10 else ''}"
+                        button.setText(button_text)
+                        button.setToolTip(preview_script)
+            
+            # Carica configurazioni seriali
+            global SERIAL_PORT, BAUD_RATE
+            if "serial" in config:
+                if "port" in config["serial"]:
+                    SERIAL_PORT = config["serial"]["port"]
+                if "baud" in config["serial"]:
+                    BAUD_RATE = config["serial"]["baud"]
+            
+            self.log(f"> Configurazione caricata da {CONFIG_FILE}")
+            return True
+        except Exception as e:
+            self.log(f"> Errore nel caricare la configurazione: {e}")
+            return False
+
     def closeEvent(self, event):
+        # Salva la configurazione prima di chiudere
+        self.save_config()
+        
         if self.serial_thread:
             self.serial_thread.stop()
         if self.serial_connection and self.serial_connection.is_open:
