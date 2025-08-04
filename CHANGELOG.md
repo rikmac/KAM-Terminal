@@ -30,7 +30,7 @@ Tutte le modifiche rilevanti a questo progetto verranno documentate in questo fi
 - Sostituzione tag <CALL> nei messaggi
 
 ### Script Predefiniti
-- F1: "CQ CQ CQ DE <CALL> <CALL> K"
+- F1: "CQ CQ CQ DE XX1XYZ XX1XYZ K"
 - F2: "TNX QSO 73"
 - F3: "TU"
 - F4-F8: Configurabili dall'utente
@@ -40,13 +40,13 @@ Tutte le modifiche rilevanti a questo progetto verranno documentate in questo fi
 - Baud rate: 1200
 - Timeout: 0.1 secondi
 - Supporto porte COM1-COM10
-- Velocità baud: 300-115200
+- Velocità baud: 300-9600
 
 ### Compatibilità
 - Windows 10/11
 - Python 3.x
 - Radio KAM (Kantronics All Mode)
-- Modi digitali: CW, PSK31, RTTY, Packet
+- Modi digitali: CW, RTTY, Packet
 
 ---
 
