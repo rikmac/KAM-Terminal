@@ -65,7 +65,7 @@ Questo programma fornisce un'interfaccia terminale semplice e moderna per comuni
 
 ### Prerequisiti
 ```bash
-pip install pyserial
+pip install pyserial PyQt5
 ```
 
 ### Esecuzione
