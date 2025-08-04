@@ -5,27 +5,29 @@ Tutte le modifiche rilevanti a questo progetto verranno documentate in questo fi
 ## [1.0.0] - 2025-07-29
 
 ### Aggiunto
-- Interfaccia grafica Tkinter con terminale diviso
+- Interfaccia grafica PyQt5 con terminale diviso
 - Parte superiore per ricezione dal KAM (display verde)
 - Parte inferiore per invio comandi (terminale nero)
 - Pulsanti F1-F8 configurabili per script rapidi
 - Configurazione script tramite tasto destro
-- Pulsanti TX (rosso) e RX (verde) per controllo manuale
+- Pulsanti TX (rosso), RX (verde) e RX-E (arancio) per controllo manuale
 - Pulsante CMD per command mode
 - Configurazione porta seriale e baud rate
+- Gestione del nominativo personalizzabile
 - Connessione seriale automatica con thread dedicato
 - Gestione comandi CTRL-C per controllo KAM
 - Script predefiniti per operazioni comuni
-- Barra di stato con informazioni connessione
+- Salvataggio/caricamento della configurazione in JSON
 
 ### Funzionalità Tecniche
 - Comunicazione seriale asincrona con pyserial
 - Gestione errori di connessione
 - Thread separato per lettura seriale
-- Finestre dialog personalizzate
+- Interfaccia Qt con finestre dialog personalizzate
 - Stili colore per pulsanti TX/RX
 - Font monospace per terminale
 - Encoding ASCII per compatibilità KAM
+- Sostituzione tag <CALL> nei messaggi
 
 ### Script Predefiniti
 - F1: "CQ CQ CQ DE <CALL> <CALL> K"
