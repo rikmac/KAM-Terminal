@@ -147,6 +147,11 @@ class KAMTerminalQt(QMainWindow):
         rx_btn.setStyleSheet("background:green;color:black;")
         rx_btn.clicked.connect(self.rx_mode)
         hmacro.addWidget(rx_btn)
+        rx_buffer_btn = QPushButton("RX Buffer")
+        rx_buffer_btn.setStyleSheet("background:orange;color:black;")
+        rx_buffer_btn.clicked.connect(self.rx_after_buffer_empty)
+        rx_buffer_btn.setToolTip("CTRL-C E: Torna in RX dopo svuotamento buffer TX")
+        hmacro.addWidget(rx_buffer_btn)
         cmd_btn = QPushButton("CMD")
         cmd_btn.clicked.connect(self.command_mode)
         hmacro.addWidget(cmd_btn)
@@ -263,8 +268,15 @@ class KAMTerminalQt(QMainWindow):
         if self.serial_connection and self.serial_connection.is_open:
             try:
                 self.log(f"Invio comando: {text}")
+                # Invia TX mode prima del comando
+                self.serial_connection.write(b'\x03T\r')
+                time.sleep(0.1)  # Breve pausa per assicurarsi che il KAM sia in TX
+                # Invia il comando dello script
                 self.serial_connection.write(text.encode('ascii') + b'\r')
-                self.log("Comando eseguito")
+                time.sleep(0.1)  # Breve pausa per dare tempo al KAM di processare
+                # Usa CTRL-C E per tornare in RX dopo lo svuotamento del buffer
+                self.serial_connection.write(b'\x03E\r')
+                self.log("Comando eseguito con ritorno automatico in RX dopo svuotamento buffer")
             except Exception as e:
                 self.log(f"Errore invio: {e}")
         else:
@@ -295,9 +307,18 @@ class KAMTerminalQt(QMainWindow):
         if self.serial_connection and self.serial_connection.is_open:
             try:
                 self.serial_connection.write(b'\x03R\r')
-                self.log("Comando inviato: CTRL-C R (RX Mode)")
+                self.log("Comando inviato: CTRL-C R (RX Mode immediato)")
             except Exception as e:
                 self.log(f"Errore RX: {e}")
+                
+    def rx_after_buffer_empty(self):
+        """Torna in ricezione dopo lo svuotamento del buffer TX"""
+        if self.serial_connection and self.serial_connection.is_open:
+            try:
+                self.serial_connection.write(b'\x03E\r')
+                self.log("Comando inviato: CTRL-C E (RX Mode dopo svuotamento buffer)")
+            except Exception as e:
+                self.log(f"Errore RX dopo buffer: {e}")
 
     def closeEvent(self, event):
         if self.serial_thread:

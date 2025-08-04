@@ -25,7 +25,8 @@ Questo programma fornisce un'interfaccia terminale semplice e moderna per comuni
 ### Pulsanti di Controllo
 - **F1-F8**: Script configurabili (tasto destro per configurare)
 - **TX (rosso)**: Mette il KAM in trasmissione
-- **RX (verde)**: Mette il KAM in ricezione
+- **RX (verde)**: Mette il KAM in ricezione immediata
+- **RX Buffer (arancio)**: Mette il KAM in ricezione dopo lo svuotamento del buffer TX
 - **CMD**: Torna al command mode del KAM
 
 ## 🚀 Come Usare
@@ -41,12 +42,19 @@ Questo programma fornisce un'interfaccia terminale semplice e moderna per comuni
 ### Configurazione Script
 - **Tasto destro** su qualsiasi pulsante F1-F8 per configurare
 - Inserisci il testo desiderato (max 50 caratteri visibili)
-- Gli script vengono eseguiti immediatamente con RETURN automatico
+- Gli script vengono eseguiti in sequenza automatica:
+  1. Passa in modalità TX
+  2. Invia il testo dello script
+  3. Torna in RX dopo lo svuotamento del buffer (CTRL-C E)
 
 ### Comandi Speciali
 - **CTRL-C**: Invia comando di controllo al KAM
+  - **CTRL-C T**: Passa in trasmissione
+  - **CTRL-C R**: Torna in ricezione immediata
+  - **CTRL-C E**: Torna in ricezione dopo svuotamento buffer TX
+  - **CTRL-C X**: Torna in Command Mode
 - **RETURN**: Esegue il comando digitato nel terminale
-- **Tasti F1-F8**: Esegue script configurato
+- **Tasti F1-F8**: Esegue script configurato con sequenza TX → Comando → RX dopo buffer vuoto
 
 ## ⚙️ Configurazione
 
