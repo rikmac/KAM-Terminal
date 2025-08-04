@@ -71,11 +71,12 @@ class ConfigDialog(QDialog):
 class KAMTerminalQt(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("KAM Terminal - Kantronics All Mode (Qt)")
-        self.resize(800, 600)
+        self.setWindowTitle("KAM Terminal - Qt")  # Titolo più breve
+        self.resize(800, 800)  # Stessa larghezza ma 200px più alta
 
         self.serial_connection = None
         self.serial_thread = None
+        self.script_buttons = {}  # Dizionario per tenere traccia dei pulsanti degli script
         self.scripts = {
             "F1": "CQ CQ CQ DE IW5DGQ IW5DGQ K",
             "F2": "TNX QSO 73",
@@ -95,19 +96,45 @@ class KAMTerminalQt(QMainWindow):
         vbox = QVBoxLayout(central)
         self.setCentralWidget(central)
 
-        # Status bar senza label di stato
-        hstatus = QHBoxLayout()
-        btn_config = QPushButton("Configura")
-        btn_config.clicked.connect(self.configure_serial)
-        hstatus.addWidget(btn_config)
-        btn_connect = QPushButton("Connetti")
-        btn_connect.clicked.connect(self.try_serial_connection)
-        hstatus.addWidget(btn_connect)
-        hstatus.addStretch()
-        vbox.addLayout(hstatus)
+        # Crea menu bar
+        menubar = self.menuBar()
+        edit_menu = menubar.addMenu('Edit')
+        
+        # Azioni del menu
+        config_action = edit_menu.addAction('Configura')
+        config_action.triggered.connect(self.configure_serial)
+        
+        connect_action = edit_menu.addAction('Connetti KAM')
+        connect_action.triggered.connect(self.try_serial_connection)
+        
+        # Aggiunge i pulsanti di controllo principali sotto la barra dei menu
+        control_bar = QHBoxLayout()
+        
+        # Aggiunge uno stretch all'inizio per spingere i pulsanti a destra
+        control_bar.addStretch()
+        
+        tx_btn = QPushButton("TX")
+        tx_btn.setStyleSheet("background:red;color:black;")
+        tx_btn.clicked.connect(self.tx_mode)
+        tx_btn.setFixedWidth(50)
+        control_bar.addWidget(tx_btn)
+        
+        rx_btn = QPushButton("RX")
+        rx_btn.setStyleSheet("background:green;color:black;")
+        rx_btn.clicked.connect(self.rx_mode)
+        rx_btn.setFixedWidth(50)
+        control_bar.addWidget(rx_btn)
+        
+        rx_buffer_btn = QPushButton("RX-E")
+        rx_buffer_btn.setStyleSheet("background:orange;color:black;")
+        rx_buffer_btn.clicked.connect(self.rx_after_buffer_empty)
+        rx_buffer_btn.setToolTip("CTRL-C E: Torna in RX dopo svuotamento buffer TX")
+        rx_buffer_btn.setFixedWidth(50)
+        control_bar.addWidget(rx_buffer_btn)
+        
+        vbox.addLayout(control_bar)
 
-        # RX display (2/3 spazio)
-        vbox.addWidget(QLabel("Ricezione dal KAM:"))
+        # RX display
         rx_container = QVBoxLayout()
         self.display = QTextEdit()
         self.display.setReadOnly(True)
@@ -115,10 +142,41 @@ class KAMTerminalQt(QMainWindow):
         rx_container.addWidget(self.display)
         rx_widget = QWidget()
         rx_widget.setLayout(rx_container)
-        vbox.addWidget(rx_widget, stretch=2)
+        vbox.addWidget(rx_widget, stretch=2)  # Rapporto 2:1 (2/3 in alto, 1/3 in basso)
 
-        # TX terminal (1/3 spazio)
-        vbox.addWidget(QLabel("Terminale per invio comandi al KAM:"))
+        # Macro buttons spostati nella zona centrale
+        hmacro = QHBoxLayout()
+        for i in range(1, 9):
+            key = f"F{i}"
+            script_text = self.scripts.get(key, "")
+            button_text = f"{key}: {script_text[:10]}{'...' if len(script_text) > 10 else ''}"
+            btn = QPushButton(button_text)
+            btn.setFixedWidth(110)  # Bottoni leggermente più stretti
+            btn.clicked.connect(lambda _, k=key: self.send_script(k))
+            btn.setContextMenuPolicy(Qt.CustomContextMenu)
+            btn.customContextMenuRequested.connect(lambda _, k=key: self.configure_script(k))
+            # Tooltip che mostra il testo completo
+            if script_text:
+                btn.setToolTip(script_text)
+            else:
+                btn.setToolTip("Tasto destro per configurare")
+            hmacro.addWidget(btn)
+            self.script_buttons[key] = btn  # Memorizza il riferimento al pulsante
+        
+        # Control buttons
+        cmd_btn = QPushButton("CMD")
+        cmd_btn.clicked.connect(self.command_mode)
+        cmd_btn.setFixedWidth(50)  # Larghezza fissa per uniformità
+        hmacro.addWidget(cmd_btn)
+        
+        clr_btn = QPushButton("CLR")
+        clr_btn.clicked.connect(self.clear_rx_display)
+        clr_btn.setFixedWidth(50)  # Larghezza fissa per uniformità
+        hmacro.addWidget(clr_btn)
+        hmacro.addStretch()
+        vbox.addLayout(hmacro)
+
+        # TX terminal
         tx_container = QVBoxLayout()
         self.terminal_input = QTextEdit()
         self.terminal_input.setStyleSheet("background:black;color:white;font-family:Courier;font-size:10pt;")
@@ -126,40 +184,7 @@ class KAMTerminalQt(QMainWindow):
         self.terminal_input.installEventFilter(self)
         tx_widget = QWidget()
         tx_widget.setLayout(tx_container)
-        vbox.addWidget(tx_widget, stretch=1)
-
-        # Macro buttons
-        hmacro = QHBoxLayout()
-        for i in range(1, 9):
-            key = f"F{i}"
-            btn = QPushButton(key)
-            btn.setFixedWidth(60)
-            btn.clicked.connect(lambda _, k=key: self.send_script(k))
-            btn.setContextMenuPolicy(Qt.CustomContextMenu)
-            btn.customContextMenuRequested.connect(lambda _, k=key: self.configure_script(k))
-            hmacro.addWidget(btn)
-        # Control buttons
-        tx_btn = QPushButton("TX")
-        tx_btn.setStyleSheet("background:red;color:black;")
-        tx_btn.clicked.connect(self.tx_mode)
-        hmacro.addWidget(tx_btn)
-        rx_btn = QPushButton("RX")
-        rx_btn.setStyleSheet("background:green;color:black;")
-        rx_btn.clicked.connect(self.rx_mode)
-        hmacro.addWidget(rx_btn)
-        rx_buffer_btn = QPushButton("RX Buffer")
-        rx_buffer_btn.setStyleSheet("background:orange;color:black;")
-        rx_buffer_btn.clicked.connect(self.rx_after_buffer_empty)
-        rx_buffer_btn.setToolTip("CTRL-C E: Torna in RX dopo svuotamento buffer TX")
-        hmacro.addWidget(rx_buffer_btn)
-        cmd_btn = QPushButton("CMD")
-        cmd_btn.clicked.connect(self.command_mode)
-        hmacro.addWidget(cmd_btn)
-        clr_btn = QPushButton("CLR")
-        clr_btn.clicked.connect(self.clear_rx_display)
-        hmacro.addWidget(clr_btn)
-        hmacro.addStretch()
-        vbox.addLayout(hmacro)
+        vbox.addWidget(tx_widget, stretch=1)  # Mantiene lo stretch a 1 per l'area di invio
 
         self.log("> KAM Terminal Qt Avviato")
 
@@ -252,10 +277,19 @@ class KAMTerminalQt(QMainWindow):
         if dlg.exec_():
             new_script = entry.text()
             self.scripts[key] = new_script
-            if new_script:
-                self.log(f"> {key}: {new_script}")
-            else:
-                self.log(f"> {key}: Cancellato")
+            
+            # Aggiorna il testo del pulsante usando il riferimento memorizzato
+            if key in self.script_buttons:
+                button = self.script_buttons[key]
+                button_text = f"{key}: {new_script[:10]}{'...' if len(new_script) > 10 else ''}"
+                button.setText(button_text)
+                
+                if new_script:
+                    button.setToolTip(new_script)
+                    self.log(f"> {key}: {new_script}")
+                else:
+                    button.setToolTip("Tasto destro per configurare")
+                    self.log(f"> {key}: Cancellato")
 
     def send_macro(self, text):
         if self.serial_connection and self.serial_connection.is_open:
