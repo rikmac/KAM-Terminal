@@ -161,12 +161,7 @@ class KAMTerminalQt(QMainWindow):
         hmacro.addStretch()
         vbox.addLayout(hmacro)
 
-        self.log("=== KAM Terminal Qt Avviato ===")
-        self.log("Parte alta: ricezione dal KAM")
-        self.log("Parte bassa: scrivi e premi INVIO per inviare")
-        self.log("FLUSSO: 1) TX per trasmettere, 2) F1-F8 o scrivi, 3) RX per ricevere")
-        self.log("Tasti F1-F8: script configurabili (tasto destro per configurare)")
-        self.log("CTRL-C: comandi speciali KAM")
+        self.log("> KAM Terminal Qt Avviato")
 
     def eventFilter(self, obj, event):
         if obj == self.terminal_input and event.type() == event.KeyPress:
@@ -193,8 +188,7 @@ class KAMTerminalQt(QMainWindow):
             SERIAL_PORT, BAUD_RATE = dlg.get_values()
             if self.serial_connection and self.serial_connection.is_open:
                 self.serial_connection.close()
-            self.log(f"Configurazione aggiornata: {SERIAL_PORT} @ {BAUD_RATE} baud")
-            self.log("Clicca 'Connetti' per applicare le nuove impostazioni")
+            self.log(f"> Configurato: {SERIAL_PORT} @ {BAUD_RATE}")
 
     def try_serial_connection(self):
         try:
@@ -205,12 +199,11 @@ class KAMTerminalQt(QMainWindow):
                 self.serial_thread.stop()
             self.serial_thread = SerialThread(self.serial_connection)
             self.serial_thread.received.connect(self.display_raw)
-            self.serial_thread.error.connect(lambda e: self.log(f"Errore lettura: {e}"))
+            self.serial_thread.error.connect(lambda e: self.log(f"Errore: {e}"))
             self.serial_thread.start()
-            self.log(f"=== Connesso al KAM ({SERIAL_PORT} @ {BAUD_RATE} baud) ===")
+            self.log(f"> Connesso a {SERIAL_PORT} @ {BAUD_RATE}")
         except Exception as e:
-            self.status_label.setText(f"Porta: {SERIAL_PORT} @ {BAUD_RATE} baud - Errore: {e}")
-            self.log(f"=== Errore connessione: {e} ===")
+            self.log(f"> Errore: {e}")
 
     def display_raw(self, text):
         self.display.setReadOnly(False)
@@ -222,9 +215,9 @@ class KAMTerminalQt(QMainWindow):
         if self.serial_connection and self.serial_connection.is_open:
             try:
                 self.serial_connection.write(b'\x03')
-                self.log("Comando CTRL-C ")
+                self.log("> CTRL-C")
             except Exception as e:
-                self.log(f"Errore CTRL-C: {e}")
+                self.log(f"Errore: {e}")
 
     def send_terminal_command(self):
         command = self.terminal_input.toPlainText().strip()
@@ -233,7 +226,7 @@ class KAMTerminalQt(QMainWindow):
                 self.serial_connection.write(command.encode('ascii') + b'\r')
                 self.log(f"> {command}")
             except Exception as e:
-                self.log(f"Errore invio: {e}")
+                self.log(f"Errore: {e}")
         self.terminal_input.clear()
 
     def send_script(self, key):
@@ -241,7 +234,7 @@ class KAMTerminalQt(QMainWindow):
         if script:
             self.send_macro(script)
         else:
-            self.log(f"{key}: Script non configurato - tasto destro per configurare")
+            self.log(f"> {key}: Non configurato")
 
     def configure_script(self, key):
         dlg = QDialog(self)
@@ -260,14 +253,15 @@ class KAMTerminalQt(QMainWindow):
             new_script = entry.text()
             self.scripts[key] = new_script
             if new_script:
-                self.log(f"{key} configurato: {new_script}")
+                self.log(f"> {key}: {new_script}")
             else:
-                self.log(f"{key} cancellato")
+                self.log(f"> {key}: Cancellato")
 
     def send_macro(self, text):
         if self.serial_connection and self.serial_connection.is_open:
             try:
-                self.log(f"Invio comando: {text}")
+                # Log solo del testo dello script, senza altri dettagli
+                self.log(f"> {text}")
                 # Invia TX mode prima del comando
                 self.serial_connection.write(b'\x03T\r')
                 time.sleep(0.1)  # Breve pausa per assicurarsi che il KAM sia in TX
@@ -276,9 +270,9 @@ class KAMTerminalQt(QMainWindow):
                 time.sleep(0.1)  # Breve pausa per dare tempo al KAM di processare
                 # Usa CTRL-C E per tornare in RX dopo lo svuotamento del buffer
                 self.serial_connection.write(b'\x03E\r')
-                self.log("Comando eseguito con ritorno automatico in RX dopo svuotamento buffer")
+                # Nessun messaggio di completamento per mantenere lo schermo pulito
             except Exception as e:
-                self.log(f"Errore invio: {e}")
+                self.log(f"Errore: {e}")
         else:
             self.log(f"OFFLINE: {text}")
 
@@ -286,9 +280,9 @@ class KAMTerminalQt(QMainWindow):
         if self.serial_connection and self.serial_connection.is_open:
             try:
                 self.serial_connection.write(b'\x03X\r')
-                self.log("Comando inviato: CTRL-C X (Command Mode)")
+                self.log("> CMD")
             except Exception as e:
-                self.log(f"Errore CMD: {e}")
+                self.log(f"Errore: {e}")
 
     def clear_rx_display(self):
         self.display.setReadOnly(False)
@@ -299,26 +293,26 @@ class KAMTerminalQt(QMainWindow):
         if self.serial_connection and self.serial_connection.is_open:
             try:
                 self.serial_connection.write(b'\x03T\r')
-                self.log("Comando inviato: CTRL-C T (TX Mode)")
+                self.log("> TX")
             except Exception as e:
-                self.log(f"Errore TX: {e}")
+                self.log(f"Errore: {e}")
 
     def rx_mode(self):
         if self.serial_connection and self.serial_connection.is_open:
             try:
                 self.serial_connection.write(b'\x03R\r')
-                self.log("Comando inviato: CTRL-C R (RX Mode immediato)")
+                self.log("> RX")
             except Exception as e:
-                self.log(f"Errore RX: {e}")
+                self.log(f"Errore: {e}")
                 
     def rx_after_buffer_empty(self):
         """Torna in ricezione dopo lo svuotamento del buffer TX"""
         if self.serial_connection and self.serial_connection.is_open:
             try:
                 self.serial_connection.write(b'\x03E\r')
-                self.log("Comando inviato: CTRL-C E (RX Mode dopo svuotamento buffer)")
+                self.log("> RX-Buffer")
             except Exception as e:
-                self.log(f"Errore RX dopo buffer: {e}")
+                self.log(f"Errore: {e}")
 
     def closeEvent(self, event):
         if self.serial_thread:
